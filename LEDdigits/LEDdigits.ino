@@ -21,35 +21,37 @@
  * every 1/3 sec) onto an SD card, and either turn the heating element on or off
  * based on the temperature.
  */
- //  AnalogRead to Serial
-float aIn = A0;
 #include <SD.h>
+
+
 File myFile; //!< The name of the variable that references the file you wish to save to
-int CS = 10; //pin 10 is the CS pin
- 
-int i = 0; //for the switch, in this lab we're alternating btwn 2 numbers
-double display_me = 0; // Initialize value to display in main loop. Eventually this should be the realtime temperature
-double temperature = 0;
- /*
- A generic unsigned integer can represent any number between 0 and 2^32-1.
- You can use an 8 bit uint8_t to represent up any value 0-255 which is more
- appropriate for pins and lcd digits.*/
- const uint8_t d1 = 1; //!< Pin used to turn the first LED digit on.
- const uint8_t d2 = 2; //!< Pin used to turn the second LED digit on.
- const uint8_t d3 = 3; //!< Pin used to turn the third LED digit on.
- const uint8_t segA = 4; //!< Pin used to turn segment A of the LED on. 
- const uint8_t segB = 5; 
- const uint8_t segC = 6;
- const uint8_t segD = 7;
- const uint8_t segE = 8;
- const uint8_t segF = 9;
- const uint8_t segG = 10;
- const uint8_t d4 = 11; //!< Pin used to turn the fourth LED digit on.
- const uint8_t DECIMAL = 12;
- const uint8_t heatelement = 13;
- /* Function prototypes: new functions either need to be defined or declared 
-  using a prototype before using them. I am putting function prototypes at the
-  beginning before loop and main, and they will be called upon during the loop()*/
+uint32_t last_sd_time; //!< Keeps track of millis() for saving to file.
+
+const uint8_t CS = 10; //!< Pin for SD Chip Select(CS).
+//const uint8_t DI = 11; //!< Pin connected to the SD Data In(DI).
+//const uint8_t DO = 12; //!< Pin connected to the SD Data Out(DO).
+//const uint8_t SCK = 13;//!< Pin connected to the SD System Clock(SCK).
+
+ /*!
+  * Output pin assignments. These correspond to the 7 segment display as well as the heating element connection.
+  */
+const uint8_t ledEnablePins[4] = {1,2,3,A3}; //!< Pins to enable each LED digit.
+const uint8_t segA = 4; 
+const uint8_t segB = 5; 
+const uint8_t segC = 6;
+const uint8_t segD = 7;
+const uint8_t segE = 8;
+const uint8_t segF = 9;
+const uint8_t segG = A2;
+const uint8_t DECIMAL = A4;
+const uint8_t heatelement = A1; //!< Pin connected to the heater.
+
+const uint8_t aIn = A0; //!< Pin connected to the temperature sensor.
+
+/* 
+*  Function prototypes: new functions either need to be defined or declared using a prototype before using them. 
+*  I am putting function prototypes at the beginning before loop and main, and they will be called upon during the loop()
+*/
 void return_digits_to_display(double somenumber, uint8_t mydigits[4]);
 void displayDigit(uint8_t digit);
 void test_function(void);
@@ -58,7 +60,7 @@ void displayNumber(double value);
  * \brief Returns the four digits to display.
  * 
  * \param [in] somenumber: floating point number to convert into digits.
- * \param [out] digits: array of four digits to represent the double.*/
+ * \param [out] digits: array of four digits to represent the double. */
 void return_digits_to_display(double somenumber, uint8_t mydigits[4]){
      /* example for proof of concept: 84.65
      since the array is of integers, reassigning double values to int will just
@@ -83,10 +85,12 @@ void return_digits_to_display(double somenumber, uint8_t mydigits[4]){
     mydigits[3] = 0;
   }  
 }
+
 /*
- * \brief Takes a single unsigned integer digit and displays it on the LCD,
-  Low corresponds with being on, high with off for this 
-  \param [in] digit: the value to display on the LCD. 
+ * \brief Takes a single unsigned integer digit and displays it on the LCD.
+ * 
+ * Low corresponds with being on, high with off for this.
+ * \param [in] digit: the value to display on the LCD. 
  */
 void displayDigit(uint8_t digit){
   digitalWrite(DECIMAL, HIGH); //turns off the decimal place
@@ -187,6 +191,7 @@ void displayDigit(uint8_t digit){
     Serial.println(digit);
     break;
   }}
+
 /*! 
  * This takes a double, and refers to return_digits_to_display() function, 
  *  in order to change this double into an integer array. Then, it steps 
@@ -201,33 +206,20 @@ void displayDigit(uint8_t digit){
 void displayNumber(double value) {
   uint8_t d;
   uint8_t mydigits[4];
-  /*Convert the floating point value into four digits.*/
+  /* Convert the floating point value into four digits.*/
   return_digits_to_display(value, mydigits);
-   /*Paint each digit*/
+   /* Paint each digit*/
   for(d = 0; d <4; d++) {
     //Turn on a single digit.
-    switch(d) {
-    case 0:
-      digitalWrite(d1, HIGH);
-      break;
-    case 1:
+    digitalWrite(ledEnablePins[d], HIGH); 
+    if (1 == d) {
       digitalWrite(DECIMAL, LOW); //We want decimal to occur after the 2nd digit for the temp
-      digitalWrite(d2, HIGH);
-      break;
-    case 2:
-      digitalWrite(d3, HIGH);
-      break;
-    case 3:
-      digitalWrite(d4, HIGH);
-      break;
     }
+
     displayDigit(mydigits[d]); //Turn on the correct segments for this digit.
     delayMicroseconds(10); //Display this digit for 10 microseconds)
-    //Turn off all digits.
-    digitalWrite(d1, LOW);
-    digitalWrite(d2, LOW);
-    digitalWrite(d3, LOW);
-    digitalWrite(d4, LOW);
+    
+    digitalWrite(ledEnablePins[d], LOW); //Turn off the digit.
   } // for (each LED digit)
 }
 
@@ -235,11 +227,13 @@ void displayNumber(double value) {
  * \brief Arduino setup initialization function.
  */
 void setup() {
+    uint8_t d;
+    
     Serial.begin(9600);
-    pinMode(d1, OUTPUT);
-    pinMode(d2, OUTPUT);
-    pinMode(d3, OUTPUT);
-    pinMode(d4, OUTPUT);
+    
+    for (d=0; d<4; d++) {
+      pinMode(ledEnablePins[d], OUTPUT);
+    }
     pinMode(segA, OUTPUT);
     pinMode(segB, OUTPUT);
     pinMode(segC, OUTPUT);
@@ -248,45 +242,47 @@ void setup() {
     pinMode(segF, OUTPUT);
     pinMode(segG, OUTPUT);
     pinMode(DECIMAL, OUTPUT);
-    SD.begin(CS); //initializes CS pin for SD card writing
+    
+    SD.begin(CS); // Initializes CS pin for SD card writing. Library intializes (DI, SO, SCK).
+    
     pinMode(heatelement, OUTPUT);
+
+    last_sd_time = millis();
 }
-unsigned long loop_count = 0;
-double lowtemp = 35.0;
-double hightemp = 39.0;
 
 /*!
  * \brief Arduino standard sketch loop.
 */
 void loop() {  
-       // read the input on analog pin 0:   
-      float sensorValue = analogRead(aIn);  
-      // print out the value to serial port:  
-      float voltagereading = sensorValue*5/1024; 
-      Serial.println(voltagereading);   
-      //equation to take voltagereading to temp
-      double temp = voltagereading; //change when we get equation       
+  double display_me; // Initialize value to display in main loop. Eventually this should be the realtime temperature
+  float sensorValue = analogRead(aIn);  // read the input on analog pin 0:     
+  float voltagereading = sensorValue*5/1024; 
   
-      display_me = temp;
-      displayNumber(display_me); //keeps looping through to display the current temp
-      
-         
-      loop_count++;
-        if (0 == (loop_count%300))//every 300 ms
-        {
-          myFile = SD.open("test.txt", FILE_WRITE); //opens up a file on the SD named test.txt for writing
-          myFile.println(temp); //prints to the file
-          myFile.close(); //closes the file
-        }
-        
-       if(temp<lowtemp)
-       {
-        digitalWrite(heatelement,HIGH);
-       }
-       else if(temp>hightemp)
-       {
-        digitalWrite(heatelement,LOW);
-       }
-              
-     }
+  Serial.println(voltagereading);   // print out the value to serial port:  
+  //equation to take voltagereading to temp
+  double temp = voltagereading; //change when we get equation       
+  
+  display_me = temp;
+  displayNumber(display_me); //keeps looping through to display the current temperature.
+  
+  const double lowtemp = 35.0;            // Low and hightemp limits are not changed so declare them as const. 
+  const double hightemp = 39.0;
+  
+  if (300 <= (millis() - last_sd_time))
+  {
+    myFile = SD.open("test.txt", FILE_WRITE); //opens up a file on the SD named test.txt for writing
+    myFile.println(temp); //prints to the file
+    myFile.close(); //closes the file
+    last_sd_time = millis();
+  }  
+  
+  if(temp<lowtemp)
+  {
+    digitalWrite(heatelement,HIGH);
+  }
+  else if(temp>hightemp)
+  {
+    digitalWrite(heatelement,LOW);
+  }              
+}
    
