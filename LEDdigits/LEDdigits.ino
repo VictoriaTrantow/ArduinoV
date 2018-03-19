@@ -22,30 +22,35 @@
  */
 #include <SD.h>
 
-
 File myFile; //!< The name of the variable that references the file you wish to save to
 uint32_t last_sd_time; //!< Keeps track of millis() for saving to file.
-
-const uint8_t CS = 10; //!< Pin for SD Chip Select(CS).
+const uint16_t digitOnTime = 25; //!< Time in microseconds to turn the LED digit on.
+/*
+ * Pins for SD. The SD library assigns and initializes DI, DO, SCK.
+ */
+const uint8_t CS = 10; //!< Output pin for SD Chip Select(CS).
 //const uint8_t DI = 11; //!< Pin connected to the SD Data In(DI).
 //const uint8_t DO = 12; //!< Pin connected to the SD Data Out(DO).
 //const uint8_t SCK = 13;//!< Pin connected to the SD System Clock(SCK).
-
- /*!
-  * Output pin assignments. These correspond to the 7 segment display as well as the heating element connection.
+ /*  
+  *   Pins for 7 segment display. 
   */
-const uint8_t ledEnablePins[4] = {1,2,3,A3}; //!< Pins to enable each LED digit.
-const uint8_t segA = 4; 
-const uint8_t segB = 5; 
-const uint8_t segC = 6;
-const uint8_t segD = 7;
-const uint8_t segE = 8;
-const uint8_t segF = 9;
-const uint8_t segG = A2;
-const uint8_t DECIMAL = A4;
-const uint8_t heatelement = A1; //!< Pin connected to the heater.
+/*
+ * Leave pins 0, 1 for Rx,Tx serial communications.
+ */
+const uint8_t segA = 2;  //!< Output pin connected to segment A of the 7 seg display.
+const uint8_t segB = 3; 
+const uint8_t segC = 4;
+const uint8_t segD = 5;
+const uint8_t segE = 6;
+const uint8_t segF = 7;
+const uint8_t segG = 8;
+const uint8_t DECIMAL = 9;
+const uint8_t ledEnablePins[4] = {A2, A3, A4, A5}; //!< Output pins to power each LED digit.
 
-const uint8_t aIn = A0; //!< Pin connected to the temperature sensor.
+const uint8_t heatelement = A1; //!< Output pin connected to the heater.
+
+const uint8_t aIn = A0; //!< Analog input pin connected to the temperature sensor.
 
 /* 
 *  Function prototypes: new functions either need to be defined or declared using a prototype before using them. 
@@ -54,6 +59,9 @@ const uint8_t aIn = A0; //!< Pin connected to the temperature sensor.
 void return_digits_to_display(double somenumber, uint8_t mydigits[4]);
 void displayDigit(uint8_t digit);
 void displayNumber(double value);
+
+void testdisplayDigit(void);
+
 /*! 
  * \brief Returns the four digits to display.
  * 
@@ -89,9 +97,14 @@ void return_digits_to_display(double somenumber, uint8_t mydigits[4]){
  * 
  * Low corresponds with being on, high with off for this.
  * \param [in] digit The value to display on the LCD. 
+ * \param [in] decimalPoint true if the decimal point should be displayed to the right of this digit.
  */
-void displayDigit(uint8_t digit){
-  digitalWrite(DECIMAL, HIGH); //turns off the decimal place
+void displayDigit(uint8_t digit, bool decimalPoint){
+
+  if (decimalPoint) {
+    digitalWrite(DECIMAL, LOW); //turns on the decimal place
+  } 
+  
   //switch works so that if digit is equal to the case, that case will proceed.
   switch(digit){
    case 0:   //To display 0, we turn on all segments except for segment G
@@ -188,7 +201,8 @@ void displayDigit(uint8_t digit){
     Serial.println("displayDigit() invalid digit.");
     Serial.println(digit);
     break;
-  }}
+  }
+}
 
 /*! 
  * This takes a double, and refers to return_digits_to_display() function, 
@@ -209,14 +223,13 @@ void displayNumber(double value) {
    /* Paint each digit*/
   for(d = 0; d <4; d++) {
     //Turn on a single digit.
-    digitalWrite(ledEnablePins[d], HIGH); 
     if (1 == d) {
-      digitalWrite(DECIMAL, LOW); //We want decimal to occur after the 2nd digit for the temp
+      displayDigit(mydigits[d], true ); //Turn on the correct segments for this digit.
+    }else {
+      displayDigit(mydigits[d], false ); // No decimal point after this digit.
     }
-
-    displayDigit(mydigits[d]); //Turn on the correct segments for this digit.
-    delayMicroseconds(10); //Display this digit for 10 microseconds)
-    
+    digitalWrite(ledEnablePins[d], HIGH); 
+    delayMicroseconds(digitOnTime); //Display this digit.
     digitalWrite(ledEnablePins[d], LOW); //Turn off the digit.
   } // for (each LED digit)
 }
@@ -231,6 +244,7 @@ void setup() {
     
     for (d=0; d<4; d++) {
       pinMode(ledEnablePins[d], OUTPUT);
+      digitalWrite(ledEnablePins[d], LOW); // Don't power any of the LEDs.
     }
     pinMode(segA, OUTPUT);
     pinMode(segB, OUTPUT);
@@ -240,12 +254,29 @@ void setup() {
     pinMode(segF, OUTPUT);
     pinMode(segG, OUTPUT);
     pinMode(DECIMAL, OUTPUT);
-    
+    /*
+     * Initialize all the seqgments to off.
+     */
+    digitalWrite(segA, HIGH);
+    digitalWrite(segB, HIGH);
+    digitalWrite(segC, HIGH);
+    digitalWrite(segD, HIGH);
+    digitalWrite(segE, HIGH);
+    digitalWrite(segF, HIGH);
+    digitalWrite(segG, HIGH);
+    digitalWrite(DECIMAL, HIGH);
+
     SD.begin(CS); // Initializes CS pin for SD card writing. Library intializes (DI, SO, SCK).
     
     pinMode(heatelement, OUTPUT);
 
     last_sd_time = millis();
+
+    testdisplaySegment();
+    testdisplayDigit();
+    testdisplayNumber();
+
+    for (;;);
 }
 
 /*!
