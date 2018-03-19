@@ -2,7 +2,6 @@
  * 
  *  \mainpage BME 201
  *  
- *  BME 201
  *  \author Victoria Trantow
  *  \date 3/10/18
  *
@@ -54,13 +53,12 @@ const uint8_t aIn = A0; //!< Pin connected to the temperature sensor.
 */
 void return_digits_to_display(double somenumber, uint8_t mydigits[4]);
 void displayDigit(uint8_t digit);
-void test_function(void);
 void displayNumber(double value);
 /*! 
  * \brief Returns the four digits to display.
  * 
  * \param [in] somenumber: floating point number to convert into digits.
- * \param [out] digits: array of four digits to represent the double. */
+ * \param [out] mydigits: array of four digits to represent the double. */
 void return_digits_to_display(double somenumber, uint8_t mydigits[4]){
      /* example for proof of concept: 84.65
      since the array is of integers, reassigning double values to int will just
@@ -86,11 +84,11 @@ void return_digits_to_display(double somenumber, uint8_t mydigits[4]){
   }  
 }
 
-/*
+/*!
  * \brief Takes a single unsigned integer digit and displays it on the LCD.
  * 
  * Low corresponds with being on, high with off for this.
- * \param [in] digit: the value to display on the LCD. 
+ * \param [in] digit The value to display on the LCD. 
  */
 void displayDigit(uint8_t digit){
   digitalWrite(DECIMAL, HIGH); //turns off the decimal place
