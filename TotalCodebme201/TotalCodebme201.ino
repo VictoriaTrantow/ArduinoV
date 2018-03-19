@@ -1,4 +1,5 @@
-/* BME 201
+/*! \file 
+ * BME 201
  Victoria Trantow
  3/10/18
  This program reads in an ADC value, converts that ADC value to voltage and then temperature 
@@ -11,7 +12,7 @@
 //Variable initializations
 float aIn = A0; //  AnalogRead to Serial
 #include <SD.h> //SD card
-File myFile; //The name of the variable that references the file you wish to save to
+File myFile; //!< The name of the variable that references the file you wish to save to
 const int CS = 10; 
 const int DI = 11;
 const int DO = 12;
