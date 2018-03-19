@@ -1,2 +1,2 @@
 # ArduinoV
-Arduion setup.
+Arduino setup.
