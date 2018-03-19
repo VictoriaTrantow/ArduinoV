@@ -1,9 +1,3 @@
-/*
-  $Id: $
-  $URL: $   
-  $Revision: $
-  $Date: $ 
-*/
 /*! @file
  * 
  *  \mainpage BME 201
