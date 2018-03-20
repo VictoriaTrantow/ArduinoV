@@ -10,13 +10,10 @@
  
 
 //Variable initializations
-float aIn = A0; //  AnalogRead to Serial
+const uint8_t aIn = A0; //  AnalogRead to Serial
 #include <SD.h> //SD card
 File myFile; //!< The name of the variable that references the file you wish to save to
-const int CS = 10; 
-const int DI = 11;
-const int DO = 12;
-const int SCK = 13;
+const int CS = 10; //Need to physically connect the others, but not declare variables
 /*SS pin to CS pin
 MOSI pin to DI
 MISO pin to DO
@@ -27,19 +24,20 @@ SCK pin to SCK pin*/
  A generic unsigned integer can represent any number between 0 and 2^32-1.
  You can use an 8 bit uint8_t to represent up any value 0-255 which is more
  appropriate for pins and lcd digits.*/
- const uint8_t d1 = 1;
- const uint8_t d2 = 2;
- const uint8_t d3 = 3;
- const uint8_t segA = 4; 
- const uint8_t segB = 5; 
- const uint8_t segC = 6;
- const uint8_t segD = 7;
- const uint8_t segE = 8;
- const uint8_t segF = 9;
- const uint8_t segG = A2;
- const uint8_t d4 = A3; 
- const uint8_t DECIMAL = A4;
+ 
  const uint8_t heatelement = A1;
+ const uint8_t segA = 2;  //!< Output pin connected to segment A of the 7 seg display.
+const uint8_t segB = 3; 
+const uint8_t segC = 4;
+const uint8_t segD = 5;
+const uint8_t segE = 6;
+const uint8_t segF = 7;
+const uint8_t segG = 8;
+const uint8_t DECIMAL = 9;
+const uint8_t d1 = A2;
+const uint8_t d2 = A3;
+const uint8_t d3 = A4;
+const uint8_t d4 = A5;
 
  /* Function prototypes: new functions either need to be defined or declared 
   using a prototype before using them. I am putting function prototypes at the
@@ -195,6 +193,7 @@ void displayNumber(double value) {
    /*Paint each digit*/
   for(d = 0; d <4; d++) {
     //Turn on a single digit.
+    displayDigit(mydigits[d]); //Turn on the correct segments for this digit.
     switch(d) {
     case 0:
       digitalWrite(d1, HIGH);
@@ -210,8 +209,7 @@ void displayNumber(double value) {
       digitalWrite(d4, HIGH);
       break;
     }
-    displayDigit(mydigits[d]); //Turn on the correct segments for this digit.
-    delayMicroseconds(10); //Display this digit for 10 microseconds)
+     delayMicroseconds(10); //Display this digit for 10 microseconds)
     //Turn off all digits.
     digitalWrite(d1, LOW);
     digitalWrite(d2, LOW);
@@ -238,9 +236,6 @@ void setup() {
     pinMode(segG, OUTPUT);
     pinMode(DECIMAL, OUTPUT);
     SD.begin(CS); //initializes CS pin for SD card writing
-    SD.begin(DI);
-    SD.begin(DO);
-    SD.begin(SCK);
 
     pinMode(heatelement, OUTPUT);
 }

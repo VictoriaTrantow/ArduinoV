@@ -1,5 +1,6 @@
 /*! @file
- * 
+ *  \brief This file implements the main software for the BME201 project.
+ *  
  *  \mainpage BME 201
  *  
  *  \author Victoria Trantow

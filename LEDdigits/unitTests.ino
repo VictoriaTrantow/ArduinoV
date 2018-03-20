@@ -1,4 +1,12 @@
 /*!
+ * \file unitTests.ino
+ * 
+ * \brief This file implements simple unit tests.
+ * 
+ * These functions are in a separate file because they probably won't be used once the hardware and software are working.
+ */
+
+/*!
  *  Increment display from 0.000 to 100.000
  */
 void testdisplayNumber(void) {
